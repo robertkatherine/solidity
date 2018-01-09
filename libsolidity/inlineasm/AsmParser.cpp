@@ -254,6 +254,10 @@ assembly::Expression Parser::parseExpression()
 	if (operation.type() == typeid(Instruction))
 	{
 		Instruction const& instr = boost::get<Instruction>(operation);
+		if (m_flavour != AsmFlavour::Loose && currentToken() != Token::LParen)
+			fatalParserError(
+				"Non-functional instructions are not allowed in this context."
+			);
 		// Disallow instructions returning multiple values (and DUP/SWAP) as expression.
 		if (
 			instructionInfo(instr.instruction).ret != 1 ||
@@ -267,8 +271,7 @@ assembly::Expression Parser::parseExpression()
 			);
 		// Enforce functional notation for instructions requiring multiple arguments.
 		int args = instructionInfo(instr.instruction).args;
-		bool requireFunctionalNotation = (args > 0 || m_flavour != AsmFlavour::Loose);
-		if (requireFunctionalNotation && currentToken() != Token::LParen)
+		if (args > 0 && currentToken() != Token::LParen)
 			fatalParserError(string(
 				"Expected token \"(\" (\"" +
 				instructionNames().at(instr.instruction) +
